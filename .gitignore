@@ -1,0 +1,29 @@
+# Ambiente
+.env
+.env.*
+!.env.example
+
+# Node / Next
+node_modules/
+.next/
+out/
+
+# Laravel / PHP
+vendor/
+
+# Logs
+*.log
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Build / cache
+dist/
+coverage/
+.cache/
+
+# Docker overrides locais
+docker-compose.override.yml
