@@ -106,14 +106,9 @@ class GameController extends Controller
             ], 422);
         }
 
-        $hasScores = isset($data['home_score']) && isset($data['away_score']);
-        $status = $data['status'] ?? 'scheduled';
+        $resolvedStatus = $this->resolveStatus($data);
 
-        if ($hasScores) {
-            $status = 'finished';
-        }
-
-        if (! $hasScores && $status === 'finished') {
+        if ($resolvedStatus === null) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Um jogo finalizado precisa ter home_score e away_score.',
@@ -126,7 +121,7 @@ class GameController extends Controller
             'match_date' => $data['match_date'],
             'home_score' => $data['home_score'] ?? null,
             'away_score' => $data['away_score'] ?? null,
-            'status' => $status,
+            'status' => $resolvedStatus,
         ]);
 
         $game->load(['homeTeam', 'awayTeam']);
@@ -169,14 +164,9 @@ class GameController extends Controller
             ], 422);
         }
 
-        $hasScores = isset($data['home_score']) && isset($data['away_score']);
-        $status = $data['status'] ?? 'scheduled';
+        $resolvedStatus = $this->resolveStatus($data);
 
-        if ($hasScores) {
-            $status = 'finished';
-        }
-
-        if (! $hasScores && $status === 'finished') {
+        if ($resolvedStatus === null) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Um jogo finalizado precisa ter home_score e away_score.',
@@ -189,7 +179,7 @@ class GameController extends Controller
             'match_date' => $data['match_date'],
             'home_score' => $data['home_score'] ?? null,
             'away_score' => $data['away_score'] ?? null,
-            'status' => $status,
+            'status' => $resolvedStatus,
         ]);
 
         $game->load(['homeTeam', 'awayTeam']);
@@ -266,6 +256,27 @@ class GameController extends Controller
     }
 
     /**
+     * Determina o status final do jogo com base nos dados informados.
+     *
+     * Retorna null quando há inconsistência (status finished sem placar).
+     */
+    private function resolveStatus(array $data): ?string
+    {
+        $hasScores = isset($data['home_score']) && isset($data['away_score']);
+        $status = $data['status'] ?? 'scheduled';
+
+        if ($hasScores) {
+            return 'finished';
+        }
+
+        if ($status === 'finished') {
+            return null;
+        }
+
+        return $status;
+    }
+
+    /**
      * Valida as regras de confronto entre dois times.
      *
      * Regras:
@@ -293,12 +304,13 @@ class GameController extends Controller
 
         $pairGamesQuery = Game::query()
             ->where(function ($query) use ($homeTeamId, $awayTeamId) {
-                $query->where('home_team_id', $homeTeamId)
-                    ->where('away_team_id', $awayTeamId);
-            })
-            ->orWhere(function ($query) use ($homeTeamId, $awayTeamId) {
-                $query->where('home_team_id', $awayTeamId)
-                    ->where('away_team_id', $homeTeamId);
+                $query->where(function ($q) use ($homeTeamId, $awayTeamId) {
+                    $q->where('home_team_id', $homeTeamId)
+                        ->where('away_team_id', $awayTeamId);
+                })->orWhere(function ($q) use ($homeTeamId, $awayTeamId) {
+                    $q->where('home_team_id', $awayTeamId)
+                        ->where('away_team_id', $homeTeamId);
+                });
             });
 
         if ($ignoreGameId !== null) {

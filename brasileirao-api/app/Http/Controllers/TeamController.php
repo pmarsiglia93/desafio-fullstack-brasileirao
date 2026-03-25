@@ -78,9 +78,19 @@ class TeamController extends Controller
      * Remove um time.
      *
      * Endpoint restrito a administradores.
+     * Não é permitido remover um time que possui jogos cadastrados.
      */
     public function destroy(Team $team)
     {
+        $hasGames = $team->homeGames()->exists() || $team->awayGames()->exists();
+
+        if ($hasGames) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Não é possível remover um time que possui jogos cadastrados.',
+            ], 422);
+        }
+
         $team->delete();
 
         return response()->json([
