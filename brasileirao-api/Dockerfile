@@ -16,8 +16,13 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 COPY . .
 
-RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
+RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts \
+    && mkdir -p storage/logs storage/framework/cache/data storage/framework/sessions storage/framework/views \
+    && chmod -R 777 storage bootstrap/cache
+
+COPY start.sh /start.sh
+RUN chmod +x /start.sh
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "php artisan package:discover --ansi && php artisan migrate --force && php artisan db:seed --force && php artisan serve --host=0.0.0.0 --port=8000"]
+CMD ["/start.sh"]
