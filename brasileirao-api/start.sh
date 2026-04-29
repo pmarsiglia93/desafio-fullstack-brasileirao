@@ -4,6 +4,9 @@ set -e
 echo "==> Discovering packages..."
 php artisan package:discover --ansi
 
+echo "==> Caching config..."
+php artisan config:cache
+
 echo "==> Running migrations..."
 php artisan migrate --force
 
