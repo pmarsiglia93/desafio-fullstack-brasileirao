@@ -2,9 +2,6 @@
 
 namespace App\Providers;
 
-use Dedoc\Scramble\Scramble;
-use Dedoc\Scramble\Support\Generator\OpenApi;
-use Dedoc\Scramble\Support\Generator\SecurityScheme;
 use Illuminate\Support\ServiceProvider;
 
 class ScrambleServiceProvider extends ServiceProvider
@@ -16,15 +13,17 @@ class ScrambleServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        Scramble::configure()
-            ->withDocumentTransformers(function (OpenApi $openApi) {
-                $openApi->secure(
-                    SecurityScheme::http('bearer')
-                );
+        if (class_exists(\Dedoc\Scramble\Scramble::class)) {
+            \Dedoc\Scramble\Scramble::configure()
+                ->withDocumentTransformers(function (\Dedoc\Scramble\Support\Generator\OpenApi $openApi) {
+                    $openApi->secure(
+                        \Dedoc\Scramble\Support\Generator\SecurityScheme::http('bearer')
+                    );
 
-                $openApi->info->title = 'Brasileirão API';
-                $openApi->info->version = '1.0.0';
-                $openApi->info->description = 'Documentação da API do desafio Full Stack do Brasileirão.';
-            });
+                    $openApi->info->title = 'Brasileirão API';
+                    $openApi->info->version = '1.0.0';
+                    $openApi->info->description = 'Documentação da API do desafio Full Stack do Brasileirão.';
+                });
+        }
     }
 }
