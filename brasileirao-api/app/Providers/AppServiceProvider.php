@@ -7,7 +7,7 @@ use Dedoc\Scramble\Support\Generator\OpenApi;
 use Dedoc\Scramble\Support\Generator\SecurityScheme;
 use Illuminate\Support\ServiceProvider;
 
-class ScrambleServiceProvider extends ServiceProvider
+class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {

@@ -32,6 +32,21 @@ services:
       - brasileirao_network
     command: sh -c "composer install && php artisan key:generate --force && php artisan migrate --force && php artisan db:seed --force && php artisan serve --host=0.0.0.0 --port=8000"
 
+  scheduler:
+    build:
+      context: ./brasileirao-api
+      dockerfile: Dockerfile
+    container_name: brasileirao_scheduler
+    restart: unless-stopped
+    working_dir: /var/www
+    volumes:
+      - ./brasileirao-api:/var/www
+    depends_on:
+      - mysql
+    networks:
+      - brasileirao_network
+    command: sh -c "composer install --no-interaction && php artisan schedule:work"
+
   frontend:
     build:
       context: ./brasileirao-front

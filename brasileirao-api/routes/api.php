@@ -1,8 +1,10 @@
 <?php
 
+use App\Http\Controllers\AiAnalysisController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\GameController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\StandingsController;
 use App\Http\Controllers\TeamController;
 use Illuminate\Support\Facades\Route;
@@ -12,6 +14,8 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::post('/refresh', [AuthController::class, 'refresh']);
 
 Route::get('/standings', [StandingsController::class, 'index']);
+Route::get('/schedule', [ScheduleController::class, 'index']);
+Route::get('/ai/standings-analysis', [AiAnalysisController::class, 'analyze']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', [AuthController::class, 'me']);

@@ -8,17 +8,6 @@ use Illuminate\Http\JsonResponse;
 
 class StandingsController extends Controller
 {
-    /**
-     * Retorna a classificação atual do campeonato.
-     *
-     * A classificação é calculada com base apenas nos jogos com status `finished`.
-     *
-     * Critérios de ordenação:
-     * - pontos
-     * - saldo de gols
-     * - gols pró
-     * - ordem alfabética do nome
-     */
     public function index(): JsonResponse
     {
         $teams = Team::orderBy('name')->get();
@@ -27,56 +16,56 @@ class StandingsController extends Controller
 
         foreach ($teams as $team) {
             $standings[$team->id] = [
-                'team_id' => $team->id,
-                'name' => $team->name,
-                'slug' => $team->slug,
-                'logo_url' => $team->logo_url,
-                'points' => 0,
-                'played' => 0,
-                'wins' => 0,
-                'draws' => 0,
-                'losses' => 0,
-                'goals_for' => 0,
-                'goals_against' => 0,
+                'team_id'        => $team->id,
+                'name'           => $team->name,
+                'slug'           => $team->slug,
+                'logo_url'       => $team->logo_url,
+                'points'         => 0,
+                'played'         => 0,
+                'wins'           => 0,
+                'draws'          => 0,
+                'losses'         => 0,
+                'goals_for'      => 0,
+                'goals_against'  => 0,
                 'goal_difference' => 0,
+                'form'           => [],
             ];
         }
 
-        $finishedGames = Game::where('status', 'finished')->get();
+        $finishedGames = Game::where('status', 'finished')->orderBy('match_date')->get();
 
         foreach ($finishedGames as $game) {
-            $homeTeamId = $game->home_team_id;
-            $awayTeamId = $game->away_team_id;
+            $homeId = $game->home_team_id;
+            $awayId = $game->away_team_id;
 
-            $homeScore = (int) $game->home_score;
-            $awayScore = (int) $game->away_score;
-
-            if (! isset($standings[$homeTeamId]) || ! isset($standings[$awayTeamId])) {
+            if (! isset($standings[$homeId], $standings[$awayId])) {
                 continue;
             }
 
-            $standings[$homeTeamId]['played']++;
-            $standings[$awayTeamId]['played']++;
+            $home = (int) $game->home_score;
+            $away = (int) $game->away_score;
 
-            $standings[$homeTeamId]['goals_for'] += $homeScore;
-            $standings[$homeTeamId]['goals_against'] += $awayScore;
+            $standings[$homeId]['played']++;
+            $standings[$awayId]['played']++;
 
-            $standings[$awayTeamId]['goals_for'] += $awayScore;
-            $standings[$awayTeamId]['goals_against'] += $homeScore;
+            $standings[$homeId]['goals_for']     += $home;
+            $standings[$homeId]['goals_against']  += $away;
+            $standings[$awayId]['goals_for']     += $away;
+            $standings[$awayId]['goals_against']  += $home;
 
-            if ($homeScore > $awayScore) {
-                $standings[$homeTeamId]['wins']++;
-                $standings[$homeTeamId]['points'] += 3;
-                $standings[$awayTeamId]['losses']++;
-            } elseif ($homeScore < $awayScore) {
-                $standings[$awayTeamId]['wins']++;
-                $standings[$awayTeamId]['points'] += 3;
-                $standings[$homeTeamId]['losses']++;
+            if ($home > $away) {
+                $standings[$homeId]['wins']++;
+                $standings[$homeId]['points'] += 3;
+                $standings[$awayId]['losses']++;
+            } elseif ($home < $away) {
+                $standings[$awayId]['wins']++;
+                $standings[$awayId]['points'] += 3;
+                $standings[$homeId]['losses']++;
             } else {
-                $standings[$homeTeamId]['draws']++;
-                $standings[$awayTeamId]['draws']++;
-                $standings[$homeTeamId]['points']++;
-                $standings[$awayTeamId]['points']++;
+                $standings[$homeId]['draws']++;
+                $standings[$awayId]['draws']++;
+                $standings[$homeId]['points']++;
+                $standings[$awayId]['points']++;
             }
         }
 
@@ -91,11 +80,9 @@ class StandingsController extends Controller
             if ($a['points'] !== $b['points']) {
                 return $b['points'] <=> $a['points'];
             }
-
             if ($a['goal_difference'] !== $b['goal_difference']) {
                 return $b['goal_difference'] <=> $a['goal_difference'];
             }
-
             if ($a['goals_for'] !== $b['goals_for']) {
                 return $b['goals_for'] <=> $a['goals_for'];
             }
@@ -103,15 +90,52 @@ class StandingsController extends Controller
             return strcmp($a['name'], $b['name']);
         });
 
+        $formMap = $this->buildFormMap($finishedGames);
+
         foreach ($standings as $index => &$team) {
             $team['position'] = $index + 1;
+            $team['form']     = $formMap[$team['team_id']] ?? [];
         }
         unset($team);
 
         return response()->json([
-            'status' => 'success',
+            'status'  => 'success',
             'message' => 'Classificação listada com sucesso.',
-            'data' => $standings,
+            'data'    => $standings,
         ]);
+    }
+
+    private function buildFormMap($finishedGames): array
+    {
+        $gamesByTeam = [];
+
+        foreach ($finishedGames as $game) {
+            $gamesByTeam[$game->home_team_id][] = $game;
+            $gamesByTeam[$game->away_team_id][] = $game;
+        }
+
+        $formMap = [];
+
+        foreach ($gamesByTeam as $teamId => $games) {
+            // Games already ordered by match_date ASC; reverse to get most recent first
+            $last5 = array_slice(array_reverse($games), 0, 5);
+
+            $form = [];
+            foreach ($last5 as $game) {
+                $isHome = $game->home_team_id === $teamId;
+                $home   = (int) $game->home_score;
+                $away   = (int) $game->away_score;
+
+                if ($isHome) {
+                    $form[] = $home > $away ? 'V' : ($home < $away ? 'D' : 'E');
+                } else {
+                    $form[] = $away > $home ? 'V' : ($away < $home ? 'D' : 'E');
+                }
+            }
+
+            $formMap[$teamId] = $form;
+        }
+
+        return $formMap;
     }
 }

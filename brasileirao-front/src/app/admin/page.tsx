@@ -15,6 +15,7 @@ import {
 type Team = {
   id: number;
   name: string;
+  logo_url?: string | null;
 };
 
 type Game = {
@@ -924,8 +925,26 @@ export default function AdminPage() {
                     {teams.length > 0 ? (
                       teams.map((team) => (
                         <tr key={team.id} className="border-t border-zinc-800">
-                          <td className="px-3 py-2">{team.id}</td>
-                          <td className="px-3 py-2">{team.name}</td>
+                          <td className="px-3 py-2 text-zinc-400">{team.id}</td>
+                          <td className="px-3 py-2">
+                            <div className="flex items-center gap-2">
+                              {team.logo_url ? (
+                                <img
+                                  src={team.logo_url}
+                                  alt={team.name}
+                                  className="h-7 w-7 shrink-0 object-contain"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = "none";
+                                  }}
+                                />
+                              ) : (
+                                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-zinc-700 text-xs font-bold text-zinc-300">
+                                  {team.name.charAt(0)}
+                                </div>
+                              )}
+                              {team.name}
+                            </div>
+                          </td>
                         </tr>
                       ))
                     ) : (
@@ -1016,8 +1035,40 @@ export default function AdminPage() {
                       games.map((game) => (
                         <tr key={game.id} className="border-t border-zinc-800">
                           <td className="px-3 py-2">{game.id}</td>
-                          <td className="px-3 py-2">{getHomeTeamName(game)}</td>
-                          <td className="px-3 py-2">{getAwayTeamName(game)}</td>
+                          <td className="px-3 py-2">
+                            <div className="flex items-center gap-2">
+                              {(game.home_team ?? game.homeTeam)?.logo_url ? (
+                                <img
+                                  src={(game.home_team ?? game.homeTeam)!.logo_url!}
+                                  alt={getHomeTeamName(game)}
+                                  className="h-6 w-6 shrink-0 object-contain"
+                                  onError={(e) => { e.currentTarget.style.display = "none"; }}
+                                />
+                              ) : (
+                                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-zinc-700 text-xs font-bold text-zinc-300">
+                                  {getHomeTeamName(game).charAt(0)}
+                                </div>
+                              )}
+                              {getHomeTeamName(game)}
+                            </div>
+                          </td>
+                          <td className="px-3 py-2">
+                            <div className="flex items-center gap-2">
+                              {(game.away_team ?? game.awayTeam)?.logo_url ? (
+                                <img
+                                  src={(game.away_team ?? game.awayTeam)!.logo_url!}
+                                  alt={getAwayTeamName(game)}
+                                  className="h-6 w-6 shrink-0 object-contain"
+                                  onError={(e) => { e.currentTarget.style.display = "none"; }}
+                                />
+                              ) : (
+                                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-zinc-700 text-xs font-bold text-zinc-300">
+                                  {getAwayTeamName(game).charAt(0)}
+                                </div>
+                              )}
+                              {getAwayTeamName(game)}
+                            </div>
+                          </td>
                           <td className="px-3 py-2">
                             {formatGameDate(game.match_date)}
                           </td>
